@@ -26,52 +26,50 @@ module.exports = {
         pathinfo: true,
         path: path.resolve(path.join(__dirname, "..", "dist")),
         publicPath: "",
-        filename: "bundle.js",
+        filename: "[name].js",
         chunkFilename: "[name].js"
     },
     watch: true,
     optimization: {
+        moduleIds: 'named',
         splitChunks: {
-            // chunks: "all",
-            chunks: "async",
-            minSize: 30000,
-            minChunks: 1,
-            maxAsyncRequests: 5,
-            maxInitialRequests: 3,
-            // automaticNameDelimiter: '~',
-            name: true,
-
-            cacheGroups: {
-                /*vendor: {
-                    chunks: "initial",
-                    name: "vendor",
-                    test: /[\\/]node_modules[\\/]/,
-                    // minSize: 30000,
-                    minChunks: 1,
-                    maxAsyncRequests: 5,
-                    maxInitialRequests: 3,
-                    priority: -10,
-                    enforce: true
-                },*/
-                default: {
-                    minChunks: 1,
-                    priority: -20,
-                    reuseExistingChunk: true
-                }
-            }
-        },
-        runtimeChunk: true
+            chunks: "all"//,
+            // chunks: "async",
+            // minSize: 30000,
+            // minChunks: 1,
+            // maxAsyncRequests: 5,
+            // maxInitialRequests: 3,
+            // // automaticNameDelimiter: '~',
+            // // name: true,
+            //
+            // cacheGroups: {
+            //     vendor: {
+            //         chunks: "initial",
+            //         name: "vendor",
+            //         test: /[\\/]node_modules[\\/]/,
+            //         // minSize: 30000,
+            //         minChunks: 1,
+            //         maxAsyncRequests: 5,
+            //         maxInitialRequests: 3,
+            //         priority: -10,
+            //         enforce: true
+            //     },
+            //     default: {
+            //         minChunks: 1,
+            //         priority: -20,
+            //         reuseExistingChunk: true
+            //     }
+            // }
+        }//,
+        //runtimeChunk: true
     },
     plugins: [
         new webpack.EnvironmentPlugin("NODE_ENV"),
-        // чанки будут созданы с номерами вместо имени, но с этим плагином вебпак сохранит у себя мапу имен чанков
-        // что в свою очередь позволит динамически импортировать чанк по настоящему имени.
-        new webpack.NamedModulesPlugin(),
 
         // агрессивное кеширование всего в вебпаке
-        new HardSourceWebpackPlugin({
-            cacheDirectory: '../.hscache/[confighash]'
-        }),
+        // new HardSourceWebpackPlugin({
+        //     cacheDirectory: '../.hscache/[confighash]'
+        // }),
 
         new HtmlWebpackPlugin({
             hash: true,
@@ -100,13 +98,11 @@ module.exports = {
                 test: /\.tsx?$/,
                 use: [
                     {
-                        loader: "awesome-typescript-loader",
+                        loader: "ts-loader",
                         options: {
                             // не проверяем ошибки ts
                             transpileOnly: true,
-                            silent: true,
-                            // используем кэш (компилить только изменившиеся файлы)
-                            useCache: true
+                            silent: true
                         }
                     }
                 ],
@@ -122,19 +118,29 @@ module.exports = {
                 include: path.join(__dirname, "..", "src")
             },
             {
-                test: /\.s[ac]ss$/,
-                // test: /\.scss$/,
+                test: /\.mjs$/,
+                include: /node_modules/,
+                type: 'javascript/auto'
+            },
+            {
+                test: /\.s[ac]ss$/i,
                 use: [
+                    // Creates `style` nodes from JS strings
+                    "style-loader",
+                    // Translates CSS into CommonJS
+                    "css-loader",
+                    // Compiles Sass to CSS
                     {
-                        loader: "style-loader" // creates style nodes from JS strings
-                    },
-                    {
-                        loader: "css-loader" // translates CSS into CommonJS
-                    },
-                    {
-                        loader: "sass-loader" // compiles Sass to CSS
+                        loader: "sass-loader",
+                        options: {
+                            // Prefer `dart-sass`
+                            implementation: require("sass"),
+                            sassOptions: {
+                                includePaths: ["./src/scss"],
+                            }
+                        }
                     }
-                ]
+                ],
             },
             {
                 test: /\.png$/,
@@ -147,15 +153,15 @@ module.exports = {
             }
         ]
     },
-    node: {
-        fs: "empty",
-        net: "empty",
-        tls: "empty"
-    },
     resolve: {
         alias: {},
         modules: ["node_modules", "local_modules"],
-        extensions: [".webpack.js", ".web.js", ".ts", ".tsx", ".js"]
+        extensions: [".webpack.js", ".web.js", ".ts", ".tsx", ".js", ".mjs", ".scss", ".css"],
+        fallback: {
+            fs: false,
+            crypto: require.resolve("crypto-browserify"),
+            stream: require.resolve("stream-browserify")
+        }
     },
     stats: {
         // Colored output
